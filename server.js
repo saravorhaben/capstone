@@ -6,7 +6,8 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+const path = require("path");
+app.use(express.static(path.join(__dirname, "public"))); // allow images to appear
 
 
 /////////// Supabase Database Access ////////////////////
@@ -14,27 +15,26 @@ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_DEFAULT_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-
-////////////////// GLOBAL VARIBLES /////////////////////
-let allData = [];      // array to store all student pickup data(sent to react)
+////////////////// GLOBAL VARIABLES /////////////////////
+let allData = [];       // array to store all student pickup data
 let latestData = null;  // store the most recent entry 
 let currentStation = 0; // current station being assigned for pickup
 let TOTAL_STATIONS = 1;
 
 
+// things to run on startup....
 async function init() {
-  // Get the number of stations from the supabase database. 
-  try{
-    const {count, stationError} = await supabase 
+  try {
+    const { count, error: stationError } = await supabase
       .from("stations")
       .select("id", { count: "exact", head: true });
-    if(stationError){
-      throw error;
+
+    if (stationError) {
+      throw stationError;
     }
 
     TOTAL_STATIONS = count || 1;
 
-    // Run the server on port 25565
     app.listen(25565, '0.0.0.0', async () => {
       console.log('Server running on port 25565');
       console.log('Total stations:', TOTAL_STATIONS);
@@ -44,8 +44,7 @@ async function init() {
       const students = await getStudentsByPlate(testPlate);
       console.log(`Test Query for ${testPlate}:`, JSON.stringify(students, null, 2));
     });
-  }
-  catch(err){
+  } catch (err) {
     console.error("Supabase Failure: ", err);
     process.exit(1);
   }
@@ -94,11 +93,11 @@ async function getStudentsByPlate(qrCode) {
 }
 
 // FUNCTION TO ASSIGN STATIONS
-function assignStation(name, parent){
-  const station=1+ (currentStation % TOTAL_STATIONS);
-  currentStation++; // add one for next time
+function assignStation(name, parent) {
+  const station = 1 + (currentStation % TOTAL_STATIONS);
+  currentStation++;
   console.log('Total stations:', TOTAL_STATIONS);
-  return { name, parent, station};
+  return { name, parent, station };
 }
 
 // POST /data receives new student pickup data
@@ -145,6 +144,36 @@ app.get('/data', (req, res) => {
   res.json(allData);
 });
 
+// DELETE one picked-up student
+app.delete('/data', (req, res) => {
+  const { name, parent, station } = req.body;
+
+  if (!name || !parent || !station) {
+    return res.status(400).json({ error: 'Missing name, parent, or station' });
+  }
+
+  const index = allData.findIndex(
+    (student) =>
+      student.name === name &&
+      student.parent === parent &&
+      student.station === station
+  );
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Student not found' });
+  }
+
+  const removedStudent = allData.splice(index, 1)[0];
+
+  console.log('Picked up:', removedStudent);
+
+  res.json({
+    success: true,
+    removed: removedStudent,
+    remaining: allData,
+  });
+});
+
 app.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -159,67 +188,53 @@ app.get("/", (req, res) => {
             justify-content: center;
             align-items: center;
             background: linear-gradient(135deg, #3A1122, #5A1935, #3A1122);
+          }
           h1 {
             color: white;
             font-size: 3rem;
             animation: float 3s ease-in-out infinite;
           }
+          p {
+            color: white;
+          }
         </style>
       </head>
       <body>
-        <h1>Student Pickup Server</h1>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; ">
+          <img src="/mascot.png" alt/> 
+          <h1>Student Pickup Server</h1>
+          <p>Status: Connected</p> 
+        </div>
       </body>
     </html>
   `);
 });
+/// MQTT????? ///////
+  const mqtt = require("mqtt");
 
-     
+// Replace with your broker URL
+const brokerUrl = "mqtt://10.246.167.11";
+
+const client = mqtt.connect(brokerUrl);
+
+client.on("connect", () => {
+  console.log("Connected to MQTT broker");
+
+  // Subscribe to a topic
+  client.subscribe("retain", (err) => {
+    if (!err) {
+      console.log("Subscribed to topic");
+    }
+  });
+
+  // Publish a message
+  client.publish("test/topic", "Hello from Node.js");
+});
+
+// Receive messages
+client.on("message", (topic, message) => {
+  console.log(`Message received on ${topic}: ${message.toString()}`);
+});   
 
 
-
-
-// app.post('/plate', async (req, res) => {
-//   const { license_plate, plate_state } = req.body;
-
-//   if (!license_plate || !plate_state) {
-//     return res.status(400).json({
-//       error: 'Missing license_plate or plate_state'
-//     });
-//   }
-
-//   try {
-//     const { data, error } = await supabase
-//       .from('students')
-//       .select('name, parent')
-//       .eq('license_plate', license_plate.toUpperCase())
-//       .eq('plate_state', plate_state.toUpperCase());
-
-//     if (error) throw error;
-
-//     if (!data || data.length === 0) {
-//       return res.status(404).json({
-//         error: 'No student found for this license plate and state'
-//       });
-//     }
-
-//     currentStation = (currentStation % TOTAL_STATIONS) + 1;
-
-//     const responseData = {
-//       station: currentStation,
-//       license_plate: license_plate.toUpperCase(),
-//       plate_state: plate_state.toUpperCase(),
-//       students: data
-//     };
-
-//     console.log('Matched vehicle:', responseData);
-
-//     res.json(responseData);
-
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({
-//       error: 'Server error'
-//     });
-//   }
-// });
 
