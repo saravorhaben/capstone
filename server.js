@@ -19,21 +19,25 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 let allData = [];      // array to store all student pickup data(sent to react)
 let latestData = null;  // store the most recent entry 
 let currentStation = 0; // current station being assigned for pickup
+let TOTAL_STATIONS = 1;
 
 
 async function init() {
   // Get the number of stations from the supabase database. 
   try{
-    const {TOTAL_STATIONS, stationError} = await supabase 
+    const {count, stationError} = await supabase 
       .from("stations")
-      .select("*", {count: "exact", head:true});
+      .select("id", { count: "exact", head: true });
     if(stationError){
       throw error;
     }
 
+    TOTAL_STATIONS = count || 1;
+
     // Run the server on port 25565
     app.listen(25565, '0.0.0.0', () => {
       console.log('Server running on port 25565');
+      console.log('Total stations:', TOTAL_STATIONS);
     });
   }
   catch(err){
@@ -41,12 +45,15 @@ async function init() {
     process.exit(1);
   }
 }
-
-
-
-
 init();
 
+// FUNCTION TO ASSIGN STATIONS
+function assignStation(name, parent){
+  const station=1+ (currentStation % TOTAL_STATIONS);
+  currentStation++; // add one for next time
+  console.log('Total stations:', TOTAL_STATIONS);
+  return { name, parent, station};
+}
 
 // POST /data receives new student pickup data
 app.post('/data', (req, res) => {
@@ -56,7 +63,7 @@ app.post('/data', (req, res) => {
     return res.status(400).json({ error: 'Missing name or parent' });
   }
 
-  const newEntry = { name, parent };
+  const newEntry = assignStation( name, parent );
   latestData = newEntry;
   allData.push(newEntry);
 
