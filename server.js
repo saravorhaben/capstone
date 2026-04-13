@@ -21,6 +21,8 @@ let latestData = null;  // store the most recent entry
 let currentStation = 0; // current station being assigned for pickup
 let TOTAL_STATIONS = 1;
 
+
+// things to run on startup....
 async function init() {
   try {
     const { count, error: stationError } = await supabase
@@ -142,8 +144,32 @@ app.get("/", (req, res) => {
     </html>
   `);
 });
+/// MQTT????? ///////
+  const mqtt = require("mqtt");
 
-     
+// Replace with your broker URL
+const brokerUrl = "mqtt://10.246.167.11";
+
+const client = mqtt.connect(brokerUrl);
+
+client.on("connect", () => {
+  console.log("Connected to MQTT broker");
+
+  // Subscribe to a topic
+  client.subscribe("retain", (err) => {
+    if (!err) {
+      console.log("Subscribed to topic");
+    }
+  });
+
+  // Publish a message
+  client.publish("test/topic", "Hello from Node.js");
+});
+
+// Receive messages
+client.on("message", (topic, message) => {
+  console.log(`Message received on ${topic}: ${message.toString()}`);
+});   
 
 
 
