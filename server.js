@@ -7,40 +7,34 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-
 /////////// Supabase Database Access ////////////////////
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_DEFAULT_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-
-////////////////// GLOBAL VARIBLES /////////////////////
-let allData = [];      // array to store all student pickup data(sent to react)
+////////////////// GLOBAL VARIABLES /////////////////////
+let allData = [];       // array to store all student pickup data
 let latestData = null;  // store the most recent entry 
 let currentStation = 0; // current station being assigned for pickup
 let TOTAL_STATIONS = 1;
 
-
 async function init() {
-  // Get the number of stations from the supabase database. 
-  try{
-    const {count, stationError} = await supabase 
+  try {
+    const { count, error: stationError } = await supabase
       .from("stations")
       .select("id", { count: "exact", head: true });
-    if(stationError){
-      throw error;
+
+    if (stationError) {
+      throw stationError;
     }
 
     TOTAL_STATIONS = count || 1;
 
-    // Run the server on port 25565
     app.listen(25565, '0.0.0.0', () => {
       console.log('Server running on port 25565');
       console.log('Total stations:', TOTAL_STATIONS);
     });
-  }
-  catch(err){
+  } catch (err) {
     console.error("Supabase Failure: ", err);
     process.exit(1);
   }
@@ -48,11 +42,11 @@ async function init() {
 init();
 
 // FUNCTION TO ASSIGN STATIONS
-function assignStation(name, parent){
-  const station=1+ (currentStation % TOTAL_STATIONS);
-  currentStation++; // add one for next time
+function assignStation(name, parent) {
+  const station = 1 + (currentStation % TOTAL_STATIONS);
+  currentStation++;
   console.log('Total stations:', TOTAL_STATIONS);
-  return { name, parent, station};
+  return { name, parent, station };
 }
 
 // POST /data receives new student pickup data
@@ -63,7 +57,7 @@ app.post('/data', (req, res) => {
     return res.status(400).json({ error: 'Missing name or parent' });
   }
 
-  const newEntry = assignStation( name, parent );
+  const newEntry = assignStation(name, parent);
   latestData = newEntry;
   allData.push(newEntry);
 
@@ -75,10 +69,39 @@ app.post('/data', (req, res) => {
   });
 });
 
-
-/// Sends All Data Currently being stored to the React Server
+// GET all students currently waiting
 app.get('/data', (req, res) => {
   res.json(allData);
+});
+
+// DELETE one picked-up student
+app.delete('/data', (req, res) => {
+  const { name, parent, station } = req.body;
+
+  if (!name || !parent || !station) {
+    return res.status(400).json({ error: 'Missing name, parent, or station' });
+  }
+
+  const index = allData.findIndex(
+    (student) =>
+      student.name === name &&
+      student.parent === parent &&
+      student.station === station
+  );
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Student not found' });
+  }
+
+  const removedStudent = allData.splice(index, 1)[0];
+
+  console.log('Picked up:', removedStudent);
+
+  res.json({
+    success: true,
+    removed: removedStudent,
+    remaining: allData,
+  });
 });
 
 app.get("/", (req, res) => {
@@ -95,6 +118,7 @@ app.get("/", (req, res) => {
             justify-content: center;
             align-items: center;
             background: linear-gradient(135deg, #3A1122, #5A1935, #3A1122);
+          }
           h1 {
             color: white;
             font-size: 3rem;
