@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
@@ -7,61 +7,46 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let allData = [];      // array to store all student pickup data
-let latestData = null; // store the most recent entry 
 
+
+/////////// Supabase Database Access ////////////////////
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_DEFAULT_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Station rotation
-const TOTAL_STATIONS = 6; ///// UPDATE BASED ON NUMBER OF STATIONS~!!!!
-let currentStation = 0;
 
-app.post('/plate', async (req, res) => {
-  const { license_plate, plate_state } = req.body;
+////////////////// GLOBAL VARIBLES /////////////////////
+let allData = [];      // array to store all student pickup data(sent to react)
+let latestData = null;  // store the most recent entry 
+let currentStation = 0; // current station being assigned for pickup
 
-  if (!license_plate || !plate_state) {
-    return res.status(400).json({
-      error: 'Missing license_plate or plate_state'
-    });
-  }
 
-  try {
-    const { data, error } = await supabase
-      .from('students')
-      .select('name, parent')
-      .eq('license_plate', license_plate.toUpperCase())
-      .eq('plate_state', plate_state.toUpperCase());
-
-    if (error) throw error;
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({
-        error: 'No student found for this license plate and state'
-      });
+async function init() {
+  // Get the number of stations from the supabase database. 
+  try{
+    const {TOTAL_STATIONS, stationError} = await supabase 
+      .from("stations")
+      .select("*", {count: "exact", head:true});
+    if(stationError){
+      throw error;
     }
 
-    currentStation = (currentStation % TOTAL_STATIONS) + 1;
-
-    const responseData = {
-      station: currentStation,
-      license_plate: license_plate.toUpperCase(),
-      plate_state: plate_state.toUpperCase(),
-      students: data
-    };
-
-    console.log('Matched vehicle:', responseData);
-
-    res.json(responseData);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: 'Server error'
+    // Run the server on port 25565
+    app.listen(25565, '0.0.0.0', () => {
+      console.log('Server running on port 25565');
     });
   }
-});
+  catch(err){
+    console.error("Supabase Failure: ", err);
+    process.exit(1);
+  }
+}
+
+
+
+
+init();
+
 
 // POST /data receives new student pickup data
 app.post('/data', (req, res) => {
@@ -83,13 +68,87 @@ app.post('/data', (req, res) => {
   });
 });
 
+
+/// Sends All Data Currently being stored to the React Server
 app.get('/data', (req, res) => {
   res.json(allData);
 });
 
-                              
-
-app.listen(25565, '0.0.0.0', () => {
-  console.log('Server running on port 25565');
+app.get("/", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Student Pickup Server</title>
+        <style>
+          body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #3A1122, #5A1935, #3A1122);
+          h1 {
+            color: white;
+            font-size: 3rem;
+            animation: float 3s ease-in-out infinite;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Student Pickup Server</h1>
+      </body>
+    </html>
+  `);
 });
+
+     
+
+
+
+
+// app.post('/plate', async (req, res) => {
+//   const { license_plate, plate_state } = req.body;
+
+//   if (!license_plate || !plate_state) {
+//     return res.status(400).json({
+//       error: 'Missing license_plate or plate_state'
+//     });
+//   }
+
+//   try {
+//     const { data, error } = await supabase
+//       .from('students')
+//       .select('name, parent')
+//       .eq('license_plate', license_plate.toUpperCase())
+//       .eq('plate_state', plate_state.toUpperCase());
+
+//     if (error) throw error;
+
+//     if (!data || data.length === 0) {
+//       return res.status(404).json({
+//         error: 'No student found for this license plate and state'
+//       });
+//     }
+
+//     currentStation = (currentStation % TOTAL_STATIONS) + 1;
+
+//     const responseData = {
+//       station: currentStation,
+//       license_plate: license_plate.toUpperCase(),
+//       plate_state: plate_state.toUpperCase(),
+//       students: data
+//     };
+
+//     console.log('Matched vehicle:', responseData);
+
+//     res.json(responseData);
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({
+//       error: 'Server error'
+//     });
+//   }
+// });
 
