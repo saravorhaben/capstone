@@ -6,7 +6,8 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+const path = require("path");
+app.use(express.static(path.join(__dirname, "public"))); // allow images to appear
 
 
 /////////// Supabase Database Access ////////////////////
@@ -100,10 +101,17 @@ app.get("/", (req, res) => {
             font-size: 3rem;
             animation: float 3s ease-in-out infinite;
           }
+          p {
+            color: white;
+          }
         </style>
       </head>
       <body>
-        <h1>Student Pickup Server</h1>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; ">
+          <img src="/mascot.png" alt/> 
+          <h1>Student Pickup Server</h1>
+          <p>Status: Connected</p> 
+        </div>
       </body>
     </html>
   `);
@@ -112,50 +120,4 @@ app.get("/", (req, res) => {
      
 
 
-
-
-// app.post('/plate', async (req, res) => {
-//   const { license_plate, plate_state } = req.body;
-
-//   if (!license_plate || !plate_state) {
-//     return res.status(400).json({
-//       error: 'Missing license_plate or plate_state'
-//     });
-//   }
-
-//   try {
-//     const { data, error } = await supabase
-//       .from('students')
-//       .select('name, parent')
-//       .eq('license_plate', license_plate.toUpperCase())
-//       .eq('plate_state', plate_state.toUpperCase());
-
-//     if (error) throw error;
-
-//     if (!data || data.length === 0) {
-//       return res.status(404).json({
-//         error: 'No student found for this license plate and state'
-//       });
-//     }
-
-//     currentStation = (currentStation % TOTAL_STATIONS) + 1;
-
-//     const responseData = {
-//       station: currentStation,
-//       license_plate: license_plate.toUpperCase(),
-//       plate_state: plate_state.toUpperCase(),
-//       students: data
-//     };
-
-//     console.log('Matched vehicle:', responseData);
-
-//     res.json(responseData);
-
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({
-//       error: 'Server error'
-//     });
-//   }
-// });
 
