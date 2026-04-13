@@ -54,7 +54,7 @@ function assignStation(name, parent) {
   return { name, parent, station };
 }
 
-// POST /data receives new student pickup data
+// POST /data receives new student pickup data (can probably delete later)
 app.post('/data', (req, res) => {
   const { name, parent } = req.body;
 
@@ -74,7 +74,7 @@ app.post('/data', (req, res) => {
   });
 });
 
-// GET all students currently waiting
+// GET all students currently waiting (send to website)
 app.get('/data', (req, res) => {
   res.json(allData);
 });
@@ -109,6 +109,7 @@ app.delete('/data', (req, res) => {
   });
 });
 
+// Pretty frontend so doesn't show cannot get on render
 app.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -144,17 +145,15 @@ app.get("/", (req, res) => {
     </html>
   `);
 });
-/// MQTT????? ///////
+
+
+/// MQTT Connection to Zigbee ///////
   const mqtt = require("mqtt");
+  const brokerUrl = "mqtt://10.246.167.11";
+  const client = mqtt.connect(brokerUrl);
 
-// Replace with your broker URL
-const brokerUrl = "mqtt://10.246.167.11";
-
-const client = mqtt.connect(brokerUrl);
-
-client.on("connect", () => {
-  console.log("Connected to MQTT broker");
-
+  client.on("connect", () => {
+    console.log("Connected to MQTT broker");
   // Subscribe to a topic
   client.subscribe("retain", (err) => {
     if (!err) {
