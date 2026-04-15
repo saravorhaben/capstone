@@ -124,7 +124,7 @@ async function getStudentsByPlate(qrCode) {
 }
 
 // FUNCTION TO ASSIGN STATIONS
-function assignStation(name, parent) {
+function assignStation(name) {
   const station = 1 + (currentStation % TOTAL_STATIONS);
   currentStation++;
   console.log('Total stations:', TOTAL_STATIONS);
