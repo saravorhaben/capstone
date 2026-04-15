@@ -20,10 +20,9 @@ let allData = [];       // array to store all student pickup data
 let latestData = null;  // store the most recent entry 
 let currentStation = 0; // current station being assigned for pickup
 let TOTAL_STATIONS = 1;
+const studentsInfo=[];
 
-
-// things to run on startup....
-async function init() {
+async function getStations(){
   try {
     const { count, error: stationError } = await supabase
       .from("stations")
@@ -31,25 +30,48 @@ async function init() {
 
     if (stationError) {
       throw stationError;
+      return 1;
     }
+    return count;
+     } catch (err) {
+    console.error("Supabase Failure: ", err);
+    return 1;
+    process.exit(1);
 
-    TOTAL_STATIONS = count || 1;
+  }
+}
+
+async function updateStationCount(){
+  const stat = await getStations();
+  TOTAL_STATIONS=stat;
+  console.log("Updated stations:", TOTAL_STATIONS);
+  return stat;
+}
+// things to run on startup....
+async function init() {
+    TOTAL_STATIONS = await getStations();
+
+    
 
     app.listen(25565, '0.0.0.0', async () => {
       console.log('Server running on port 25565');
       console.log('Total stations:', TOTAL_STATIONS);
+      
 
       // test query
       const testPlate = '9329TX';
       const students = await getStudentsByPlate(testPlate);
       console.log(`Test Query for ${testPlate}:`, JSON.stringify(students, null, 2));
+
+      
     });
-  } catch (err) {
-    console.error("Supabase Failure: ", err);
-    process.exit(1);
-  }
+    // update station count every 5 seconds
+    setInterval(updateStationCount, 5000);
+ 
 }
 init();
+
+
 
 // query database using license plate
 async function getStudentsByPlate(qrCode) {
@@ -110,7 +132,6 @@ app.post('/data', async (req, res) => {
 
   // query database for actual student names based on the license plate
   const dbStudents = await getStudentsByPlate(parent);
-  
   let displayName = name; // fallback to the name from request
   let studentList = [];
 
@@ -233,6 +254,8 @@ app.get("/", (req, res) => {
 // Receive messages
 client.on("message", (topic, message) => {
   console.log(`Message received on ${topic}: ${message.toString()}`);
+  // license -> STUDENTS
+  studentsInfo=getStudentsByPlate(message); // 
 });   
 
 
