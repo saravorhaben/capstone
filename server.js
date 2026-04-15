@@ -152,6 +152,7 @@ app.post('/data', async (req, res) => {
   allData.push(newEntry);
 
   console.log('Final Pickup Entry:', newEntry);
+  scan_success=true; // update for a successful scan
 
   res.json({
     success: true,
