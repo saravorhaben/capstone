@@ -212,7 +212,7 @@ app.get('/display', (req, res) => {
   const DEFAULT_MSG="Please Pull Forward To";
   const SCAN_MSG="Please Scan QR Code";
   if(scan_success){
-    res.json(DEFAULT_MSG + stationColors[currentStation-1] + "Station");
+    res.json(DEFAULT_MSG + currentStation + "Station");
     scan_success=false;
   }
   else{
