@@ -136,6 +136,7 @@ app.post('/data', async (req, res) => {
   // WHAT IT RECIEVES
   // const { name, parent } = req.body;
   const { plate } = req.body;
+  console.log(req.body);
   
   if (plate) {
     return res.status(400).json({ error: 'plate' });
@@ -184,6 +185,7 @@ app.post('/data', async (req, res) => {
 // DELETE one picked-up student
 app.delete('/data', (req, res) => {
   const { name, parent, station } = req.body;
+  
 
   if (!name || !parent || !station) {
     return res.status(400).json({ error: 'Missing name, parent, or station' });
