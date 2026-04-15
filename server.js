@@ -20,6 +20,7 @@ let allData = [];       // array to store all student pickup data
 let latestData = null;  // store the most recent entry 
 let currentStation = 0; // current station being assigned for pickup
 let TOTAL_STATIONS = 1;
+let stationColors =[];
 const studentsInfo=[];
 
 async function getStations(){
@@ -27,11 +28,18 @@ async function getStations(){
     const { count, error: stationError } = await supabase
       .from("stations")
       .select("id", { count: "exact", head: true });
+    const { colors, error: stationColorError } = await supabase
+      .from("stations")
+      .select("color");
 
     if (stationError) {
       throw stationError;
       return 1;
     }
+    if (stationColorError) {
+      throw stationError;
+    }
+    stationColors=colors;
     return count;
      } catch (err) {
     console.error("Supabase Failure: ", err);
@@ -203,7 +211,7 @@ app.get('/display', (req, res) => {
   const DEFAULT_MSG="Please Pull Forward To";
   const SCAN_MSG="Please Scan QR Code";
   if(scan_success){
-    res.json(DEFAULT_MSG + currentStation + "Station");
+    res.json(DEFAULT_MSG + stationColors[currentStation-1] + "Station");
     scan_success=false;
   }
   else{
