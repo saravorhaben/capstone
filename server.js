@@ -145,7 +145,7 @@ app.post('/data', async (req, res) => {
 
   // query database for actual student names based on the license plate
   const dbStudents = await getStudentsByPlate(plate);
-  // let displayName = name; // fallback to the name from request
+  let displayName = ""; // fallback to the name from request
   let studentList = [];
   
 
