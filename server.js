@@ -128,7 +128,7 @@ function assignStation(name, parent) {
   const station = 1 + (currentStation % TOTAL_STATIONS);
   currentStation++;
   console.log('Total stations:', TOTAL_STATIONS);
-  return { name, parent, station };
+  return { name,  station };
 }
 
 // POST /data receives new student pickup data (can probably delete later)
@@ -159,7 +159,7 @@ app.post('/data', async (req, res) => {
   }
 
   // Assign a station for this pickup
-  const newEntry = assignStation(displayName, dbStudents.parent);
+  const newEntry = assignStation(displayName);
   
   
   latestData = newEntry;
@@ -185,17 +185,16 @@ app.post('/data', async (req, res) => {
 
 // DELETE one picked-up student
 app.delete('/data', (req, res) => {
-  const { name, parent, station } = req.body;
+  const { name,  station } = req.body;
   
 
-  if (!name || !parent || !station) {
+  if (!name  || !station) {
     return res.status(400).json({ error: 'Missing name, parent, or station' });
   }
 
   const index = allData.findIndex(
     (student) =>
       student.name === name &&
-      student.parent === parent &&
       student.station === station
   );
 
