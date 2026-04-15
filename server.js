@@ -134,6 +134,7 @@ app.post('/data', async (req, res) => {
   const dbStudents = await getStudentsByPlate(parent);
   let displayName = name; // fallback to the name from request
   let studentList = [];
+  scan_success=true;
 
   if (dbStudents && dbStudents.length > 0) {
     // Format names: "First Last, First Last"
