@@ -138,42 +138,43 @@ app.post('/data', async (req, res) => {
   const { plate } = req.body;
   console.log(req.body);
   
-  // if (!plate) {
-  //   return res.status(400).json({ error: 'plate' });
-  // }
+  if (!plate) {
+    return res.status(400).json({ error: 'plate' });
+  }
 
 
+  // query database for actual student names based on the license plate
+  const dbStudents = await getStudentsByPlate(plate);
+  // let displayName = name; // fallback to the name from request
+  let studentList = [];
+  
 
-  // // query database for actual student names based on the license plate
-  // const dbStudents = await getStudentsByPlate(plate);
-  // // let displayName = name; // fallback to the name from request
-  // let studentList = [];
-  // scan_success=true;
+  if (dbStudents && dbStudents.length > 0) {
+    // Format names: "First Last, First Last"
+    studentList = dbStudents.map(s => `${s.students.student_first_name} ${s.students.student_last_name}`);
+    displayName = studentList.join(', ');
+    console.log(`Matched ${dbStudents.length} students from database: ${displayName}`);
+  } else {
+    console.log('No matching students found in database, using provided name.');
+  }
 
-  // if (dbStudents && dbStudents.length > 0) {
-  //   // Format names: "First Last, First Last"
-  //   studentList = dbStudents.map(s => `${s.students.student_first_name} ${s.students.student_last_name}`);
-  //   displayName = studentList.join(', ');
-  //   console.log(`Matched ${dbStudents.length} students from database: ${displayName}`);
-  // } else {
-  //   console.log('No matching students found in database, using provided name.');
-  // }
-
-  // // Assign a station for this pickup
-  // const newEntry = assignStation(displayName, parent);
+  // Assign a station for this pickup
+  const newEntry = assignStation(displayName, dbStudents.parent);
   
   
-  // latestData = newEntry;
-  // allData.push(newEntry);
+  latestData = newEntry;
+  allData.push(newEntry);
 
-  // console.log('Final Pickup Entry:', newEntry);
-  // scan_success=true; // update for a successful scan
+  console.log('Final Pickup Entry:', newEntry);
+  scan_success=true; // update for a successful scan
   
   // note successful qr scan
   res.json({
     success: true,
     data: plate
   });
+
+
 });
 
  
