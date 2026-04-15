@@ -22,6 +22,7 @@ let currentStation = 0; // current station being assigned for pickup
 let TOTAL_STATIONS = 1;
 let stationColors =[];
 const studentsInfo=[];
+let scan_success=false;
 
 async function getStations(){
   try {
