@@ -44,7 +44,7 @@ async function getStations(){
 async function updateStationCount(){
   const stat = await getStations();
   TOTAL_STATIONS=stat;
-  console.log("Updated stations:", TOTAL_STATIONS);
+  // console.log("Updated stations:", TOTAL_STATIONS);
   return stat;
 }
 // things to run on startup....
@@ -61,7 +61,7 @@ async function init() {
       // test query
       const testPlate = '9329TX';
       const students = await getStudentsByPlate(testPlate);
-      console.log(`Test Query for ${testPlate}:`, JSON.stringify(students, null, 2));
+      // console.log(`Test Query for ${testPlate}:`, JSON.stringify(students, null, 2));
 
       
     });
@@ -139,9 +139,9 @@ app.post('/data', async (req, res) => {
     // Format names: "First Last, First Last"
     studentList = dbStudents.map(s => `${s.students.student_first_name} ${s.students.student_last_name}`);
     displayName = studentList.join(', ');
-    console.log(`Matched ${dbStudents.length} students from database: ${displayName}`);
+    // console.log(`Matched ${dbStudents.length} students from database: ${displayName}`);
   } else {
-    console.log('No matching students found in database, using provided name.');
+    // console.log('No matching students found in database, using provided name.');
   }
 
   // Assign a station for this pickup
@@ -193,6 +193,20 @@ app.delete('/data', (req, res) => {
     removed: removedStudent,
     remaining: allData,
   });
+});
+
+
+// display screen 
+app.get('/display', (req, res) => {
+  const DEFAULT_MSG="Please Pull Forward To";
+  const SCAN_MSG="Please Scan QR Code";
+  if(scan_success){
+    res.json(DEFAULT_MSG + currentStation + "Station");
+    scan_success=false;
+  }
+  else{
+    res.json(SCAN_MSG);
+  }
 });
 
 // Pretty frontend so doesn't show cannot get on render
@@ -256,7 +270,13 @@ client.on("message", (topic, message) => {
   console.log(`Message received on ${topic}: ${message.toString()}`);
   // license -> STUDENTS
   studentsInfo=getStudentsByPlate(message); // 
-});   
+});
+
+
+
+
+
+
 
 
 
