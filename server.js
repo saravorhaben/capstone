@@ -133,15 +133,19 @@ function assignStation(name, parent) {
 
 // POST /data receives new student pickup data (can probably delete later)
 app.post('/data', async (req, res) => {
-  const { name, parent } = req.body;
-
-  if (!name || !parent) {
-    return res.status(400).json({ error: 'Missing name or parent' });
+  // WHAT IT RECIEVES
+  // const { name, parent } = req.body;
+  const { plate } = req.body;
+  
+  if (plate) {
+    return res.status(400).json({ error: 'plate' });
   }
 
+
+
   // query database for actual student names based on the license plate
-  const dbStudents = await getStudentsByPlate(parent);
-  let displayName = name; // fallback to the name from request
+  const dbStudents = await getStudentsByPlate(plate);
+  // let displayName = name; // fallback to the name from request
   let studentList = [];
   scan_success=true;
 
@@ -149,9 +153,9 @@ app.post('/data', async (req, res) => {
     // Format names: "First Last, First Last"
     studentList = dbStudents.map(s => `${s.students.student_first_name} ${s.students.student_last_name}`);
     displayName = studentList.join(', ');
-    // console.log(`Matched ${dbStudents.length} students from database: ${displayName}`);
+    console.log(`Matched ${dbStudents.length} students from database: ${displayName}`);
   } else {
-    // console.log('No matching students found in database, using provided name.');
+    console.log('No matching students found in database, using provided name.');
   }
 
   // Assign a station for this pickup
@@ -163,7 +167,8 @@ app.post('/data', async (req, res) => {
 
   console.log('Final Pickup Entry:', newEntry);
   scan_success=true; // update for a successful scan
-
+  
+  // note successful qr scan
   res.json({
     success: true,
     data: newEntry
@@ -172,7 +177,7 @@ app.post('/data', async (req, res) => {
 
  
 // GET all students currently waiting (send to website)
-app.get('/data', (req, res) => {
+  app.get('/data', (req, res) => {
   res.json(allData);
 });
 
@@ -280,7 +285,7 @@ app.get("/", (req, res) => {
 client.on("message", (topic, message) => {
   console.log(`Message received on ${topic}: ${message.toString()}`);
   // license -> STUDENTS
-  studentsInfo=getStudentsByPlate(message); // 
+  studentsInfo=getStudentsByPlate(message); 
 });
 
 
