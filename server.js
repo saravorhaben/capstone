@@ -216,13 +216,14 @@ app.delete('/data', (req, res) => {
 
 // display screen 
 app.get('/display', (req, res) => {
-  const DEFAULT_MSG="Please Pull Forward To";
-  const SCAN_MSG="Please Scan QR Code";
-  if(scan_success){
-    res.json(DEFAULT_MSG + (currentStation % TOTAL_STATIONS)  + "Station");
-    scan_success=false;
-  }
-  else{
+  const DEFAULT_MSG = "Please Pull Forward To";
+  const SCAN_MSG = "Please Scan QR Code";
+
+  if (scan_success) {
+    const displayStation = ((currentStation - 1) % TOTAL_STATIONS) + 1;
+    res.json(DEFAULT_MSG + displayStation + "Station");
+    scan_success = false;
+  } else {
     res.json(SCAN_MSG);
   }
 });
@@ -266,29 +267,29 @@ app.get("/", (req, res) => {
 
 
 /// MQTT Connection to Zigbee ///////
-  const mqtt = require("mqtt");
-  const brokerUrl = "mqtt://10.246.167.11";
-  const client = mqtt.connect(brokerUrl);
+//   const mqtt = require("mqtt");
+//   const brokerUrl = "mqtt://10.246.167.11";
+//   const client = mqtt.connect(brokerUrl);
 
-  client.on("connect", () => {
-    console.log("Connected to MQTT broker");
-  // Subscribe to a topic
-  client.subscribe("retain", (err) => {
-    if (!err) {
-      console.log("Subscribed to topic");
-    }
-  });
+//   client.on("connect", () => {
+//     console.log("Connected to MQTT broker");
+//   // Subscribe to a topic
+//   client.subscribe("retain", (err) => {
+//     if (!err) {
+//       console.log("Subscribed to topic");
+//     }
+//   });
 
-  // Publish a message
-  client.publish("test/topic", "Hello from Node.js");
-});
+//   // Publish a message
+//   client.publish("test/topic", "Hello from Node.js");
+// });
 
-// Receive messages
-client.on("message", (topic, message) => {
-  console.log(`Message received on ${topic}: ${message.toString()}`);
-  // license -> STUDENTS
-  studentsInfo=getStudentsByPlate(message); 
-});
+// // Receive messages
+// client.on("message", (topic, message) => {
+//   console.log(`Message received on ${topic}: ${message.toString()}`);
+//   // license -> STUDENTS
+//   studentsInfo=getStudentsByPlate(message); 
+// });
 
 
 
