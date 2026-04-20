@@ -150,12 +150,20 @@ app.post('/data', async (req, res) => {
   
 
   if (dbStudents && dbStudents.length > 0) {
-    // Format names: "First Last, First Last"
-    studentList = dbStudents.map(s => `${s.students.student_first_name} ${s.students.student_last_name}`);
+    studentList = dbStudents.map(
+      s => `${s.students.student_first_name} ${s.students.student_last_name}`
+    );
     displayName = studentList.join(', ');
     console.log(`Matched ${dbStudents.length} students from database: ${displayName}`);
   } else {
-    console.log('No matching students found in database, using provided name.');
+    console.log('No matching students found → sending null to display');
+    latestData = null;
+    scan_success = false;
+
+    return res.json({
+      success: false,
+      data: null
+    });
   }
 
   // Assign a station for this pickup
@@ -218,6 +226,10 @@ app.delete('/data', (req, res) => {
 app.get('/display', (req, res) => {
   const DEFAULT_MSG = "Please Pull Forward To";
   const SCAN_MSG = "Please Scan QR Code";
+
+  if (latestData === null) {
+    return res.json(null); // triggers black screen
+  }
 
   if (scan_success) {
     const displayStation = ((currentStation - 1) % TOTAL_STATIONS) + 1;
