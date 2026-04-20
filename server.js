@@ -159,21 +159,27 @@ app.post('/data', async (req, res) => {
   }
 
   // Assign a station for this pickup
+  
+  
   const newEntry = assignStation(displayName);
   
   
+  if(displayName != ''){
   latestData = newEntry;
   allData.push(newEntry);
 
   console.log('Final Pickup Entry:', newEntry);
   scan_success=true; // update for a successful scan
+ 
+  
   
   // note successful qr scan
   res.json({
     success: true,
     data: plate
   });
-
+ }
+  
 
 });
 
