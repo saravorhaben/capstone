@@ -9,7 +9,6 @@ app.use(express.json());
 const path = require("path");
 app.use(express.static(path.join(__dirname, "public"))); // allow images to appear
 
-
 /////////// Supabase Database Access ////////////////////
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_DEFAULT_KEY; 
@@ -20,67 +19,59 @@ let allData = [];       // array to store all student pickup data
 let latestData = null;  // store the most recent entry 
 let currentStation = 0; // current station being assigned for pickup
 let TOTAL_STATIONS = 1;
-let stationColors =[];
-const studentsInfo=[];
-let scan_success=false;
+let stationColors = [];
+let scan_success = false;
 
-async function getStations(){
+async function getStations() {
   try {
     const { count, error: stationError } = await supabase
       .from("stations")
       .select("id", { count: "exact", head: true });
-    const { colors, error: stationColorError } = await supabase
+
+    const { data: colors, error: stationColorError } = await supabase
       .from("stations")
       .select("color");
 
     if (stationError) {
       throw stationError;
-      return 1;
     }
+
     if (stationColorError) {
-      throw stationError;
+      throw stationColorError;
     }
-    stationColors=colors;
-    return count;
-     } catch (err) {
+
+    stationColors = colors || [];
+    return count || 1;
+  } catch (err) {
     console.error("Supabase Failure: ", err);
     return 1;
-    process.exit(1);
-
   }
 }
 
-async function updateStationCount(){
+async function updateStationCount() {
   const stat = await getStations();
-  TOTAL_STATIONS=stat;
-  // console.log("Updated stations:", TOTAL_STATIONS);
+  TOTAL_STATIONS = stat;
   return stat;
 }
+
 // things to run on startup....
 async function init() {
-    TOTAL_STATIONS = await getStations();
+  TOTAL_STATIONS = await getStations();
 
-    
+  app.listen(25565, '0.0.0.0', async () => {
+    console.log('Server running on port 25565');
+    console.log('Total stations:', TOTAL_STATIONS);
 
-    app.listen(25565, '0.0.0.0', async () => {
-      console.log('Server running on port 25565');
-      console.log('Total stations:', TOTAL_STATIONS);
-      
+    // test query
+    const testPlate = '9329TX';
+    const students = await getStudentsByPlate(testPlate);
+    // console.log(`Test Query for ${testPlate}:`, JSON.stringify(students, null, 2));
+  });
 
-      // test query
-      const testPlate = '9329TX';
-      const students = await getStudentsByPlate(testPlate);
-      // console.log(`Test Query for ${testPlate}:`, JSON.stringify(students, null, 2));
-
-      
-    });
-    // update station count every 5 seconds
-    setInterval(updateStationCount, 5000);
- 
+  // update station count every 5 seconds
+  setInterval(updateStationCount, 5000);
 }
 init();
-
-
 
 // query database using license plate
 async function getStudentsByPlate(qrCode) {
@@ -89,7 +80,7 @@ async function getStudentsByPlate(qrCode) {
   const plateState = qrCode.slice(-2);
 
   // get parent id
-   const { data: parentData, error: parentError } = await supabase
+  const { data: parentData, error: parentError } = await supabase
     .from('parent')
     .select('id')
     .eq('plate_number', plateNumber)
@@ -120,6 +111,7 @@ async function getStudentsByPlate(qrCode) {
     console.error('Error fetching students:', error);
     return null;
   }
+
   return data;
 }
 
@@ -128,26 +120,22 @@ function assignStation(name) {
   const station = 1 + (currentStation % TOTAL_STATIONS);
   currentStation++;
   console.log('Total stations:', TOTAL_STATIONS);
-  return { name,  station };
+  return { name, station };
 }
 
-// POST /data receives new student pickup data (can probably delete later)
+// POST /data receives new student pickup data
 app.post('/data', async (req, res) => {
-  // WHAT IT RECIEVES
-  // const { name, parent } = req.body;
   const { plate } = req.body;
   console.log(req.body);
-  
+
   if (!plate) {
     return res.status(400).json({ error: 'plate' });
   }
 
-
   // query database for actual student names based on the license plate
   const dbStudents = await getStudentsByPlate(plate);
-  let displayName = ""; // fallback to the name from request
+  let displayName = "";
   let studentList = [];
-  
 
   if (dbStudents && dbStudents.length > 0) {
     studentList = dbStudents.map(
@@ -168,36 +156,30 @@ app.post('/data', async (req, res) => {
 
   // Assign a station for this pickup
   const newEntry = assignStation(displayName);
-  
-  
+
   latestData = newEntry;
   allData.push(newEntry);
 
   console.log('Final Pickup Entry:', newEntry);
-  scan_success=true; // update for a successful scan
-  
-  // note successful qr scan
+  scan_success = true;
+
   res.json({
     success: true,
     data: plate
   });
-
-
 });
 
- 
-// GET all students currently waiting (send to website)
-  app.get('/data', (req, res) => {
+// GET all students currently waiting
+app.get('/data', (req, res) => {
   res.json(allData);
 });
 
 // DELETE one picked-up student
 app.delete('/data', (req, res) => {
-  const { name,  station } = req.body;
-  
+  const { name, station } = req.body;
 
-  if (!name  || !station) {
-    return res.status(400).json({ error: 'Missing name, parent, or station' });
+  if (!name || !station) {
+    return res.status(400).json({ error: 'Missing name or station' });
   }
 
   const index = allData.findIndex(
@@ -221,14 +203,14 @@ app.delete('/data', (req, res) => {
   });
 });
 
-
 // display screen 
 app.get('/display', (req, res) => {
   const DEFAULT_MSG = "Please Pull Forward To";
   const SCAN_MSG = "Please Scan QR Code";
 
   if (latestData === null) {
-    return res.json(null); // triggers black screen
+    latestData = "handled";
+    return res.json(null); // triggers black screen once
   }
 
   if (scan_success) {
@@ -267,7 +249,7 @@ app.get("/", (req, res) => {
         </style>
       </head>
       <body>
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; ">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
           <img src="/mascot.png" alt/> 
           <h1>Student Pickup Server</h1>
           <p>Status: Connected</p> 
@@ -277,30 +259,24 @@ app.get("/", (req, res) => {
   `);
 });
 
-
 /// MQTT Connection to Zigbee ///////
-//   const mqtt = require("mqtt");
-//   const brokerUrl = "mqtt://10.246.167.11";
-//   const client = mqtt.connect(brokerUrl);
+// const mqtt = require("mqtt");
+// const brokerUrl = "mqtt://10.246.167.11";
+// const client = mqtt.connect(brokerUrl);
 
-//   client.on("connect", () => {
-//     console.log("Connected to MQTT broker");
-//   // Subscribe to a topic
+// client.on("connect", () => {
+//   console.log("Connected to MQTT broker");
 //   client.subscribe("retain", (err) => {
 //     if (!err) {
 //       console.log("Subscribed to topic");
 //     }
 //   });
 
-//   // Publish a message
 //   client.publish("test/topic", "Hello from Node.js");
 // });
 
-// // Receive messages
 // client.on("message", (topic, message) => {
 //   console.log(`Message received on ${topic}: ${message.toString()}`);
-//   // license -> STUDENTS
-//   studentsInfo=getStudentsByPlate(message); 
 // });
 
 
