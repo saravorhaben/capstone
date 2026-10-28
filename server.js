@@ -235,7 +235,7 @@ app.get('/display', (req, res) => {
 // TEST/RUN WITHOUT THE PI!!
 app.get('/test/scan', async (req, res) => {
   const plate =req.query.plate || '9329TX';
-  const r = await fetch( `http://localhost:25565/data`, {
+  const r = await fetch( `https://wranglers-capstone.onrender.com/data`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({plate}),
