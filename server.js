@@ -63,8 +63,8 @@ async function init() {
     console.log('Total stations:', TOTAL_STATIONS);
 
     // test query
-    const testPlate = '9329TX';
-    const students = await getStudentsByPlate(testPlate);
+    // const testPlate = '9329TX';
+    // const students = await getStudentsByPlate(testPlate);
     // console.log(`Test Query for ${testPlate}:`, JSON.stringify(students, null, 2));
   });
 
@@ -232,6 +232,17 @@ app.get('/display', (req, res) => {
   }
 });
 
+// TEST/RUN WITHOUT THE PI!!
+app.get('/test/scan', async (req, res) => {
+  const plate =req.query.plate || '9329TX';
+  const r = await fetch( `http://localhost:25565/data`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({plate}),
+
+  });
+  res.json(await r.json());
+});
 // Pretty frontend so doesn't show cannot get on render
 app.get("/", (req, res) => {
   res.send(`
